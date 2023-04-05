@@ -13,13 +13,16 @@ import (
 
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
-	BorderForeground(lipgloss.Color("240"))
+	BorderForeground(lipgloss.Color("240")).
+  Align(lipgloss.Center)
 
 type model struct {
 	table table.Model
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (m model) Init() tea.Cmd { 
+  	return tea.Batch(nil, tea.EnterAltScreen)
+}
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
@@ -50,7 +53,6 @@ func (m model) View() string {
 
 func main() {
 
-
   if len(os.Args) != 2 {
     fmt.Println("Usage: myprogram filename.txt")
     return
@@ -73,7 +75,6 @@ func main() {
   scanner := bufio.NewScanner(file)
   inc := 1
   for scanner.Scan() {
-    // fmt.Println(scanner.Text())
     myString := scanner.Text()
     values := strings.Split(myString, ",")
 
@@ -97,10 +98,10 @@ func main() {
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(7),
+		table.WithHeight(30),
 	)
 
-	s := table.DefaultStyles()
+  s := table.DefaultStyles()
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
@@ -113,7 +114,7 @@ func main() {
 	t.SetStyles(s)
 
 	m := model{t}
-	if _, err := tea.NewProgram(m).Run(); err != nil {
+	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
 	}
