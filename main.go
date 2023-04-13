@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/charmbracelet/bubbles/table"
+	"./table"
+	// "github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder()).
+	BorderStyle(lipgloss.RoundedBorder()).
 	BorderForeground(lipgloss.Color("240")).
-  Align(lipgloss.Center)
+  MarginTop(10)
 
 type model struct {
 	table table.Model
@@ -29,20 +30,32 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
-			}
 		case "q", "ctrl+c":
 			return m, tea.Quit
-		case "enter":
-			return m, tea.Batch(
-				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
-			)
-		}
-	}
+    case "l":
+      currRows := m.table.Rows()
+      currColumns := m.table.Columns()
+      newRows := []table.Row{}
+      for _, row := range currRows {
+        row = append(row[1:], row[0])
+        newRows = append(newRows, row)
+      }
+      newColumns := append(currColumns[1:], currColumns[0])
+      m.table.SetRows(newRows)
+      m.table.SetColumns(newColumns)
+    case "h":
+      currRows := m.table.Rows()
+      currColumns := m.table.Columns()
+      newRows := []table.Row{}
+      for _, row := range currRows {
+        row = append([]string{row[len(row)-1]}, row[:len(row)-1]...)
+        newRows = append(newRows, row)
+      }
+      newColumns := append([]table.Column{currColumns[len(currColumns)-1]}, currColumns[:len(currColumns)-1]...)
+      m.table.SetRows(newRows)
+      m.table.SetColumns(newColumns)
+	  }
+  }
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }
@@ -50,6 +63,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	return baseStyle.Render(m.table.View()) + "\n"
 }
+
+func DataviewStyles() table.Styles {
+  return table.Styles{
+    Selected: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212")),
+		Header:   lipgloss.NewStyle().Bold(true).Padding(0, 1),
+		Cell:     lipgloss.NewStyle().Padding(0, 1),
+  }
+} 
 
 func main() {
 
@@ -73,12 +94,12 @@ func main() {
 	columns := []table.Column{}
 
   scanner := bufio.NewScanner(file)
-  inc := 1
+  inc := 0
   for scanner.Scan() {
     myString := scanner.Text()
     values := strings.Split(myString, ",")
 
-    if inc == 1 { // set columns 
+    if inc == 0 { // set columns 
       for _, value := range values {
         columns = append(columns, table.Column{Title: value, Width: 5})
       }
@@ -101,7 +122,8 @@ func main() {
 		table.WithHeight(30),
 	)
 
-  s := table.DefaultStyles()
+  s := DataviewStyles()
+
 	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
