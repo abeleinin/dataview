@@ -8,69 +8,10 @@ import (
 
 	"./table"
 	// "github.com/charmbracelet/bubbles/table"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
-
-var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(lipgloss.Color("240")).
-  MarginTop(10)
-
-type model struct {
-	table table.Model
-}
-
-func (m model) Init() tea.Cmd { 
-  	return tea.Batch(nil, tea.EnterAltScreen)
-}
-
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return m, tea.Quit
-    case "l":
-      currRows := m.table.Rows()
-      currColumns := m.table.Columns()
-      newRows := []table.Row{}
-      for _, row := range currRows {
-        row = append(row[1:], row[0])
-        newRows = append(newRows, row)
-      }
-      newColumns := append(currColumns[1:], currColumns[0])
-      m.table.SetRows(newRows)
-      m.table.SetColumns(newColumns)
-    case "h":
-      currRows := m.table.Rows()
-      currColumns := m.table.Columns()
-      newRows := []table.Row{}
-      for _, row := range currRows {
-        row = append([]string{row[len(row)-1]}, row[:len(row)-1]...)
-        newRows = append(newRows, row)
-      }
-      newColumns := append([]table.Column{currColumns[len(currColumns)-1]}, currColumns[:len(currColumns)-1]...)
-      m.table.SetRows(newRows)
-      m.table.SetColumns(newColumns)
-	  }
-  }
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
-}
-
-func (m model) View() string {
-	return baseStyle.Render(m.table.View()) + "\n"
-}
-
-func DataviewStyles() table.Styles {
-  return table.Styles{
-    Selected: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212")),
-		Header:   lipgloss.NewStyle().Bold(true).Padding(0, 1),
-		Cell:     lipgloss.NewStyle().Padding(0, 1),
-  }
-} 
 
 func main() {
 
@@ -135,7 +76,28 @@ func main() {
 		Bold(false)
 	t.SetStyles(s)
 
-	m := model{t}
+	m := model{
+		inputs: make([]textinput.Model, 1),
+    table: t,
+	}
+
+	var txt textinput.Model
+	for i := range m.inputs {
+		txt = textinput.New()
+		txt.CursorStyle = cursorStyle
+		txt.CharLimit = 32
+
+		switch i {
+		case 0:
+			txt.Placeholder = "Enter Here"
+			txt.Focus()
+			txt.PromptStyle = focusedStyle
+			txt.TextStyle = focusedStyle
+		}
+
+		m.inputs[i] = txt
+	}
+
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
 		fmt.Println("Error running program:", err)
 		os.Exit(1)
