@@ -77,12 +77,12 @@ func main() {
 	t.SetStyles(s)
 
 	m := model{
-		inputs: make([]textinput.Model, 1),
+		input: make([]textinput.Model, 1),
     table: t,
 	}
 
 	var txt textinput.Model
-	for i := range m.inputs {
+	for i := range m.input {
 		txt = textinput.New()
 		txt.CursorStyle = cursorStyle
 		txt.CharLimit = 32
@@ -90,12 +90,11 @@ func main() {
 		switch i {
 		case 0:
 			txt.Placeholder = "Enter Here"
-			txt.Focus()
 			txt.PromptStyle = focusedStyle
 			txt.TextStyle = focusedStyle
 		}
 
-		m.inputs[i] = txt
+		m.input[0] = txt
 	}
 
 	if _, err := tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {

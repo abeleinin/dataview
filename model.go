@@ -20,6 +20,9 @@ var (
 
 	focusedButton = focusedStyle.Copy().Render("[ Submit ]")
 	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
+
+  cursorY       = 0
+  editing = false
 )
 
 var baseStyle = lipgloss.NewStyle().
@@ -28,7 +31,7 @@ var baseStyle = lipgloss.NewStyle().
 
 type model struct {
   focusIndex int
-	inputs     []textinput.Model
+	input      []textinput.Model
 	cursorMode textinput.CursorMode
 	table      table.Model
 }
@@ -43,65 +46,79 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c":
-			return m, tea.Quit
+      if !editing {
+			  return m, tea.Quit
+      }
+    case "j":
+      if !editing {
+        cursorY += 1
+      }
+    case "k":
+      if !editing {
+        cursorY -= 1
+      }
     case "l":
-      currRows := m.table.Rows()
-      currColumns := m.table.Columns()
-      newRows := []table.Row{}
-      for _, row := range currRows {
-        row = append(row[1:], row[0])
-        newRows = append(newRows, row)
+      if !editing {
+        currRows := m.table.Rows()
+        currColumns := m.table.Columns()
+        newRows := []table.Row{}
+        for _, row := range currRows {
+          row = append(row[1:], row[0])
+          newRows = append(newRows, row)
+        }
+        newColumns := append(currColumns[1:], currColumns[0])
+        m.table.SetRows(newRows)
+        m.table.SetColumns(newColumns)
       }
-      newColumns := append(currColumns[1:], currColumns[0])
-      m.table.SetRows(newRows)
-      m.table.SetColumns(newColumns)
     case "h":
-      currRows := m.table.Rows()
-      currColumns := m.table.Columns()
-      newRows := []table.Row{}
-      for _, row := range currRows {
-        row = append([]string{row[len(row)-1]}, row[:len(row)-1]...)
-        newRows = append(newRows, row)
+      if !editing {
+        currRows := m.table.Rows()
+        currColumns := m.table.Columns()
+        newRows := []table.Row{}
+        for _, row := range currRows {
+          row = append([]string{row[len(row)-1]}, row[:len(row)-1]...)
+          newRows = append(newRows, row)
+        }
+        newColumns := append([]table.Column{currColumns[len(currColumns)-1]}, currColumns[:len(currColumns)-1]...)
+        m.table.SetRows(newRows)
+        m.table.SetColumns(newColumns)
       }
-      newColumns := append([]table.Column{currColumns[len(currColumns)-1]}, currColumns[:len(currColumns)-1]...)
-      m.table.SetRows(newRows)
-      m.table.SetColumns(newColumns)
+    case "i":
+      if !editing {
+        editing = true
+        m.table.Blur()
+        m.input[0].Focus()
+      }
     case "enter":
+      editing = false
 			s := msg.String()
+
 
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
-			if s == "enter" && m.focusIndex == len(m.inputs) {
+			if s == "enter" && m.focusIndex == len(m.input) {
 				return m, tea.Quit
 			}
 
-			// Cycle indexes
-			if s == "up" || s == "shift+tab" {
-				m.focusIndex--
-			} else {
-				m.focusIndex++
-			}
-
-			if m.focusIndex > len(m.inputs) {
+			if m.focusIndex > len(m.input) {
 				m.focusIndex = 0
 			} else if m.focusIndex < 0 {
-				m.focusIndex = len(m.inputs)
+				m.focusIndex = len(m.input)
 			}
 
-			cmds := make([]tea.Cmd, len(m.inputs))
-			for i := 0; i <= len(m.inputs)-1; i++ {
-				if i == m.focusIndex {
-					// Set focused state
-					cmds[i] = m.inputs[i].Focus()
-					m.inputs[i].PromptStyle = focusedStyle
-					m.inputs[i].TextStyle = focusedStyle
-					continue
-				}
-				// Remove focused state
-				m.inputs[i].Blur()
-				m.inputs[i].PromptStyle = noStyle
-				m.inputs[i].TextStyle = noStyle
-			}
+			cmds := make([]tea.Cmd, 1)
+			cmds[0] = m.input[0].Focus()
+			m.input[0].PromptStyle = focusedStyle
+			m.input[0].TextStyle = focusedStyle
+			m.input[0].Blur()
+			m.input[0].PromptStyle = noStyle
+			m.input[0].TextStyle = noStyle
+
+      // Set new value at currRows[cursorY][0]
+      currRows := m.table.Rows()
+      currRows[cursorY][0] = m.input[0].Value()
+      m.table.SetRows(currRows)
+      m.table.Focus()
 
 			return m, tea.Batch(cmds...)
     }
@@ -114,12 +131,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) updateInputs(msg tea.Msg) tea.Cmd {
-	cmds := make([]tea.Cmd, len(m.inputs))
+	cmds := make([]tea.Cmd, len(m.input))
 
-	// Only text inputs with Focus() set will respond, so it's safe to simply
-	// update all of them here without any further logic.
-	for i := range m.inputs {
-		m.inputs[i], cmds[i] = m.inputs[i].Update(msg)
+	for i := range m.input {
+		m.input[i], cmds[i] = m.input[i].Update(msg)
 	}
 
 	return tea.Batch(cmds...)
