@@ -89,7 +89,7 @@ func main() {
 
 		switch i {
 		case 0:
-			txt.Placeholder = "Enter Here"
+			// txt.Placeholder = "Enter Here"
 			txt.PromptStyle = focusedStyle
 			txt.TextStyle = focusedStyle
 		}

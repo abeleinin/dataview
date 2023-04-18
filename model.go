@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"./table"
 	// "github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -18,10 +16,7 @@ var (
 	helpStyle           = blurredStyle.Copy()
 	cursorModeHelpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 
-	focusedButton = focusedStyle.Copy().Render("[ Submit ]")
-	blurredButton = fmt.Sprintf("[ %s ]", blurredStyle.Render("Submit"))
-
-  cursorY       = 0
+  cursorY = 0
   editing = false
 )
 
@@ -89,10 +84,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         m.table.Blur()
         m.input[0].Focus()
       }
+    case "esc":
+      editing = false
+      m.table.Focus()
+      m.input[0].Blur()
+      m.input[0].Reset()
     case "enter":
       editing = false
 			s := msg.String()
-
 
 			// Did the user press enter while the submit button was focused?
 			// If so, exit.
@@ -119,6 +118,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
       currRows[cursorY][0] = m.input[0].Value()
       m.table.SetRows(currRows)
       m.table.Focus()
+      m.input[0].Reset()
 
 			return m, tea.Batch(cmds...)
     }
