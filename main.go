@@ -5,6 +5,7 @@ import (
   "strings"
 	"fmt"
 	"os"
+  "golang.org/x/term"
 
 	"./table"
 	// "github.com/charmbracelet/bubbles/table"
@@ -36,18 +37,28 @@ func main() {
 
   scanner := bufio.NewScanner(file)
   inc := 0
+
+  // Detech terminal height
+  _, height, err := term.GetSize(0)
+  // columnWidth := 0
+  
+  if err != nil {
+    panic(err)
+  }
+
   for scanner.Scan() {
     myString := scanner.Text()
     values := strings.Split(myString, ",")
-
-    if inc == 0 { // set columns 
+    
+    // set columns 
+    if inc == 0 { 
       for _, value := range values {
         columns = append(columns, table.Column{Title: value, Width: 5})
       }
-    } else { // set rows
+    // set rows
+    } else { 
       rows = append(rows, values)
     }
-
     inc++
   }
 
@@ -56,11 +67,22 @@ func main() {
     return
   }
 
+  // 80% of the terminal height
+  scale := 0.8 
+  tableHeight := int(float64(height) * scale)
+  // tableWidth := 0
+  // if columnWidth < tableWidth {
+  //   tableWidth = columnWidth
+  // } else {
+  //   tableWidth = int(float64(width) * scale)
+  // }
+
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
-		table.WithHeight(30),
+		table.WithHeight(tableHeight),
+    // table.WithWidth(tableWidth),
 	)
 
   s := DataviewStyles()
@@ -89,7 +111,6 @@ func main() {
 
 		switch i {
 		case 0:
-			// txt.Placeholder = "Enter Here"
 			txt.PromptStyle = focusedStyle
 			txt.TextStyle = focusedStyle
 		}

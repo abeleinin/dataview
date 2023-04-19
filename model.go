@@ -78,7 +78,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
         m.table.SetRows(newRows)
         m.table.SetColumns(newColumns)
       }
-    case "i":
+    case "tab":
       if !editing {
         editing = true
         m.table.Blur()
