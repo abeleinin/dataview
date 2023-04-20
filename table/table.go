@@ -276,10 +276,10 @@ func (m Model) Rows() []Row {
 	return m.rows
 }
 
+// Columns returns the current columns.
 func (m Model) Columns() []Column {
 	return m.cols
 }
-
 
 // SetRows sets a new rows state.
 func (m *Model) SetRows(r []Row) {
